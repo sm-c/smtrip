@@ -40,7 +40,6 @@ contract TripCash is Ownable {
     uint256 public endPreICO; // preICO  finish date
     uint256 public startTime; // ICO  start date
     uint256 public endTime; // ICO  finish date
-    uint256 public period; //ICO period
 
 
     address public constant ownerWallet = 0x9dA14C46f0182D850B12866AB0f3e397Fbd4FaC4; // Owner wallet address
@@ -61,7 +60,7 @@ contract TripCash is Ownable {
      * Token constructor
      *
      **/
-    function SmpCash() public {
+    function TripCash() public {
 
         transferAllowed = false;
         refundToken = false;
@@ -270,8 +269,7 @@ contract TripCash is Ownable {
      * @param _holder token holders address
      */
 
-    function rewarding(address _holder) public onlyOwner{
-
+    function rewarding(address _holder) public onlyOwner returns(uint){
         if(notransfer[_holder]==true){
             if(now >= endTime + 63072000){
                 uint noTransfer2BonusYear = balances[_holder]*25 / 100;
@@ -280,6 +278,8 @@ contract TripCash is Ownable {
                     balances[_holder] = balances[_holder] + noTransfer2BonusYear;
                     assert(balances[_holder] >= noTransfer2BonusYear);
                     Transfer(fundWallet, _holder, noTransfer2BonusYear);
+                    notransfer[_holder]=false;
+                    return noTransfer2BonusYear;
                 }
             } else if (now >= endTime + 31536000) {
                 uint noTransferBonusYear = balances[_holder]*15 / 100;
@@ -288,9 +288,10 @@ contract TripCash is Ownable {
                     balances[_holder] = balances[_holder] + noTransferBonusYear;
                     assert(balances[_holder] >= noTransferBonusYear);
                     Transfer(fundWallet, _holder, noTransferBonusYear);
+                    notransfer[_holder]=false;
+                    return noTransferBonusYear;
                 }
             }
-            notransfer[_holder]=false;
         }
     }
     
@@ -320,25 +321,23 @@ contract TripCash is Ownable {
      /**
      *  function for finishing ICO and allowed token transfer
      */
-    function finishICO() public onlyOwner {
+    function finishICO() public onlyOwner returns (bool) {
         uint frozenBalance = balances[msg.sender]/2;
         transfer(frozenWallet2y, frozenBalance);
         transfer(frozenWallet4y, balances[msg.sender]);
         transferAllowed = true;
+        return true;
     }
 
     /**
      * return investor tokens and burning
-     * @param _from address  The address which owns the funds.
-     * @param _value uint256 Token amount for refunding.
+     * 
      */
-    function refund(address _from, uint256 _value) onlyOwner canRefundToken public returns (bool){
-        require(_value > 0);
-        require(_from != address(0));
-        require(_value <= balances[_from]);
-        balances[_from] = balances[_from] - _value;
+    function refund()  canRefundToken public returns (bool){
+        uint256 _value = balances[msg.sender];
+        balances[msg.sender] = 0;
         totalSupply = totalSupply - _value;
-        Burn(_from, _value);
+        Refund(msg.sender, _value);
         return true;
     }
 
@@ -346,5 +345,6 @@ contract TripCash is Ownable {
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Burn(address indexed burner, uint256 value);
+    event Refund(address indexed refuner, uint256 value);
 
 }
